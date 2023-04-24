@@ -16,7 +16,6 @@ export class AppComponent {
   title = 'test-packages';
   keywords: Array<string> = [];
   cloudChart: any;
-  initial: boolean = true;
   colorCodes: Array<String> = Data.colorCode;
 
   reviewList: Array<Review> = Data.reviews;
@@ -51,21 +50,21 @@ export class AppComponent {
     this.positiveMentions = this.getTopPositiveMentions();
     this.negativeMentions = this.getTopNegativeMentions();
 
-    this.extract();
+    this.createPositiveChart();
+    this.createNegativeChart();
   }
 
   getTopPositiveMentions(): Array<Keyword> {
-    return this.getUniqueKeywords(this.ratingBasedReviews.rating_5.keywords.concat(this.ratingBasedReviews.rating_4.keywords).sort((a, b) => a.value - b.value).reverse()).slice(0, 20);
+    return this.getUniqueKeywords(this.ratingBasedReviews.rating_5.keywords.concat(this.ratingBasedReviews.rating_4.keywords).sort((a, b) => a.value - b.value).reverse()).slice(0, 40);
   }
 
   getTopNegativeMentions(): Array<Keyword> {
-    return this.getUniqueKeywords(this.ratingBasedReviews.rating_1.keywords.concat(this.ratingBasedReviews.rating_2.keywords).concat(this.ratingBasedReviews.rating_3.keywords).sort((a, b) => a.value - b.value).reverse()).slice(0, 20);
+    return this.getUniqueKeywords(this.ratingBasedReviews.rating_1.keywords.concat(this.ratingBasedReviews.rating_2.keywords).concat(this.ratingBasedReviews.rating_3.keywords).sort((a, b) => a.value - b.value).reverse()).slice(0, 60);
   }
 
-  extract() {
-
-    let data = this.getCloudKeywords();
-    let colorList = this.getColorCodeList();
+  createPositiveChart() {
+    let data = this.getTopPositiveMentions();
+    let colorList = this.getPostiveColorCodeList();
 
     let config = {
       // text
@@ -81,22 +80,36 @@ export class AppComponent {
       ],
     };
 
-    if (this.initial) {
-      this.initial = false;
-      this.createChart(config);
-    }
-    else {
-      this.cloudChart.data = config
-      this.cloudChart.update();
-    }
+    this.renderChart('positivecloud', config);
   }
 
-  createChart(data: any) {
-    const ctx = <HTMLCanvasElement>document.getElementById('cloud');
+  createNegativeChart() {
+    let data = this.getTopNegativeMentions();
+    let colorList = this.getNegativeColorCodeList();
+
+    let config = {
+      // text
+      labels: data.map((d) => d.key),
+      datasets: [
+        {
+          label: '',
+          // size in pixel
+          data: data.map((d) => d.value / data[0].value * 50),
+          color: colorList,
+          hoverColor: 'gray'
+        },
+      ],
+    };
+
+    this.renderChart('negativecloud', config);
+  }
+
+  renderChart(canvasId: string, data: any) {
+    const ctx = <HTMLCanvasElement>document.getElementById(canvasId);
     if (ctx) {
       var context = ctx.getContext('2d');
       if (context) {
-        this.cloudChart = new Chart(context, {
+        new Chart(context, {
           type: "wordCloud",
           data: data,
           options: {
@@ -113,31 +126,35 @@ export class AppComponent {
         });
       }
     }
-
   }
 
   randomIntFromInterval(min: number, max: number) { // min and max included 
     return Math.floor(Math.random() * (max - min + 1) + min)
   }
 
-  getCloudKeywords(): Array<Keyword> {
-    let list: Array<Keyword> = [];
-    list = list.concat(this.ratingBasedReviews.rating_5.keywords);
-    list = list.concat(this.ratingBasedReviews.rating_4.keywords);
-    list = list.concat(this.ratingBasedReviews.rating_3.keywords);
-    list = list.concat(this.ratingBasedReviews.rating_2.keywords);
-    list = list.concat(this.ratingBasedReviews.rating_1.keywords);
-    return list;
-  }
+  // getCloudKeywords(): Array<Keyword> {
+  //   let list: Array<Keyword> = [];
+  //   list = list.concat(this.ratingBasedReviews.rating_5.keywords);
+  //   list = list.concat(this.ratingBasedReviews.rating_4.keywords);
+  //   list = list.concat(this.ratingBasedReviews.rating_3.keywords);
+  //   list = list.concat(this.ratingBasedReviews.rating_2.keywords);
+  //   list = list.concat(this.ratingBasedReviews.rating_1.keywords);
+  //   return list;
+  // }
 
   getUniqueKeywords(data: Array<Keyword>): Array<Keyword> {
     return [...new Map(data.reverse().map(v => [v.key, v])).values()].sort((a, b) => a.value - b.value).reverse();
   }
 
-  getColorCodeList(): Array<string> {
+  getPostiveColorCodeList(): Array<string> {
     let list: Array<string> = [];
     list = list.concat(Array(this.ratingBasedReviews.rating_5.keywords.length).fill(this.colorCodes[0]));
     list = list.concat(Array(this.ratingBasedReviews.rating_4.keywords.length).fill(this.colorCodes[1]));
+    return list;
+  }
+
+  getNegativeColorCodeList(): Array<string> {
+    let list: Array<string> = [];
     list = list.concat(Array(this.ratingBasedReviews.rating_3.keywords.length).fill(this.colorCodes[2]));
     list = list.concat(Array(this.ratingBasedReviews.rating_2.keywords.length).fill(this.colorCodes[3]));
     list = list.concat(Array(this.ratingBasedReviews.rating_1.keywords.length).fill(this.colorCodes[4]));
@@ -160,7 +177,7 @@ export class AppComponent {
     for (const key in temp) {
       data.push({ key: key, value: temp[key] });
     }
-    return data.sort((a, b) => a.value - b.value).reverse().slice(0, 15);
+    return data.sort((a, b) => a.value - b.value).reverse().slice(0, 20);
   }
 
   getParagraph(reviews: Array<Review>): string {
